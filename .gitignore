@@ -1,0 +1,44 @@
+# Build results
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options directory
+.vs/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+packages/
+
+# Environment variables (keep sensitive data out)
+*.env
+appsettings.Development.json
+
+# Publish profiles
+PublishProfiles/
+*.pubxml
+*.pubxml.user
