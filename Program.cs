@@ -59,24 +59,37 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
-// Đảm bảo database được tạo và có dữ liệu mẫu (cho môi trường development)
-using (var scope = app.Services.CreateScope())
+// Initialize database with better error handling
+try 
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     
-    try 
+    logger.LogInformation("Starting database initialization...");
+    
+    // Test database connection first
+    await db.Database.CanConnectAsync();
+    logger.LogInformation("Database connection successful");
+    
+    // Ensure database is created
+    db.Database.EnsureCreated();
+    logger.LogInformation("Database schema ensured");
+    
+    // Seed initial data
+    SeedData.EnsureSeedData(db);
+    logger.LogInformation("Database seeding completed");
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Database initialization failed: {Message}", ex.Message);
+    
+    // In production, we might want to fail fast if DB is not available
+    if (app.Environment.IsProduction())
     {
-        // Chỉ tạo database và các bảng nếu chưa tồn tại
-        db.Database.EnsureCreated();
-        Console.WriteLine("Database đã được tạo hoặc đã tồn tại");
-        
-        SeedData.EnsureSeedData(db);
-        Console.WriteLine("Quá trình khởi tạo dữ liệu hoàn tất");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Lỗi khi khởi tạo database: {ex.Message}");
-        // Tiếp tục chạy ứng dụng ngay cả khi có lỗi database
+        logger.LogCritical("Database connection failed in production. Exiting...");
+        throw;
     }
 }
 
@@ -89,9 +102,22 @@ if (app.Environment.IsDevelopment())
 // Sử dụng CORS
 app.UseCors("AllowFrontend");
 
+// Configure for production deployment (Render.com)
+if (app.Environment.IsProduction())
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "80";
+    app.Urls.Add($"http://0.0.0.0:{port}");
+    
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Production mode: Listening on port {Port}", port);
+}
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Add health check endpoint for deployment verification
+app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNow });
 
 app.Run();

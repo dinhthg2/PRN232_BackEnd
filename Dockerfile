@@ -12,6 +12,10 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
-ENV ASPNETCORE_URLS=http://+:80
-EXPOSE 80
+
+# Render.com uses dynamic PORT environment variable
+ENV ASPNETCORE_URLS=http://+:${PORT:-80}
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+EXPOSE ${PORT:-80}
 ENTRYPOINT ["dotnet", "PRN232.Backend.dll"]
